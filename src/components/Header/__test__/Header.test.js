@@ -2,16 +2,26 @@ import { render, screen } from '@testing-library/react';
 import Header from '../Header';
 
 describe("Header", () => {
-    it('should render same text passed into title prop', () => {
+    it('should check if there are multiple headers in the component', async () => {
         render(
             <Header 
               title="todo"
             />
         );
-        const h1Element = screen.getByText(/todo/i);
-        expect(h1Element).toBeInTheDocument();
+        const hElements = screen.getAllByRole("heading");
+        expect(hElements.length).toBe(1);
     });
-})
+
+    it ('should check if there is a header with an accessible name / description', async () => {
+        render(
+            <Header 
+              title="todo"
+            />
+        );
+        const hElement = screen.getByRole("heading", {name: /edit/i});
+        expect(hElement).toBeInTheDocument();
+    });
+});
 
 // it('should render same text passed into title prop', () => {
 //     render(
