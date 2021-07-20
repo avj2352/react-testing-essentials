@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import TodoFooter from "../TodoFooter"
-import { BrowserRouter } from "react-router-dom"
+import TodoFooter from "../TodoFooter";
+import { BrowserRouter } from "react-router-dom";
+import { renderWithRouter } from '../../../helpers/unit-test/RouterHelper';
 
 const MockTodoFooter = ({ numberOfIncompleteTasks }) => {
     return (
@@ -13,12 +14,11 @@ const MockTodoFooter = ({ numberOfIncompleteTasks }) => {
 }
 
 describe("TodoFooter", () => {
+
   it('should render the correct amount of incomplete tasks', () => {
-    render(
-        <MockTodoFooter 
-          numberOfIncompleteTasks={5}
-        />
-    );
+    renderWithRouter(<TodoFooter 
+      numberOfIncompleteTasks={5}
+    />);
     const pElement = screen.getByText(/5 tasks left/i);
     expect(pElement).toBeInTheDocument();
   });
@@ -30,7 +30,7 @@ describe("TodoFooter", () => {
         />
     );
     const pElement = screen.getByText(/1 task left/i);
-    expect(pElement).toBeInTheDocument();
+    expect(pElement).toBeTruthy();
   });
 })
 
@@ -44,15 +44,16 @@ describe("TodoFooter", () => {
 //   expect(pElement).toBeTruthy();
 // });
 
-// it('"task" should be visible when the number of incomplete tasks is one', () => {
-//   render(
-//       <MockTodoFooter 
-//         numberOfIncompleteTasks={1}
-//       />
-//   );
-//   const pElement = screen.getByText(/1 task left/i);
-//   expect(pElement).toBeVisible();
-// });
+it('"task" should be visible when the number of incomplete tasks is one', () => {
+  render(
+      <MockTodoFooter 
+        numberOfIncompleteTasks={1}
+      />
+  );
+  const pElement = screen.getByText(/1 task left/i);
+  // Expect component to be visible to the User, not hidden
+  expect(pElement).toBeVisible();
+});
 
 // it('should contain p tag with correct text', () => {
 //   render(

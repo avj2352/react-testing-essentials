@@ -2,9 +2,11 @@
 
 ## Important Links
 
+- [Official API documentation](https://testing-library.com/docs/react-testing-library/intro/)
 - [Playlist Link](https://www.youtube.com/watch?v=n_sS-GAgZ98&list=RDCMUCW5YeuERMmlnqo4oq8vwUpg&index=4)
 - [Github Code](https://github.com/harblaith7/React-Testing-Library-Net-Ninja)
 - [Types of Queries](https://testing-library.com/docs/queries/about/)
+- [Jest lifecycle hooks - youtube link](https://www.youtube.com/watch?v=MtiQMhzjQrY&list=PL4cUxeGkcC9gm4_-5UsNmLqMosM-dzuvQ&index=14)
 
 ## What is Unit Testing
 
@@ -31,7 +33,44 @@ _Hey how are the individual piece of code / components integrating / communicati
 "@testing-library/user-event": "^12.1.10",
 ```
 
+# Handling Browser Router React Elements
 
+In your daily testing, you'd probably deal with testing react elements that have `react-router-dom` elements inside them.
+
+The `render()` method can be easily modified to meet this requirements
+
+### Example 1:
+
+Creating a **Mocked Test Component** out of your **Test Component** 
+
+```javascript
+// TestComponent.test.js
+const MockTestComponent = ({ do }) => {
+    return (
+        <BrowserRouter>
+          <TestComponent  do={something}/>
+        </BrowserRouter>
+    )
+}
+```
+
+### Example 2:
+
+Creating a reusable higher order function of your `render()` method
+
+```javascript
+// RouteHelper.js
+import { BrowserRouter as Router } from 'react-router-dom';
+import { render } from '@testing-library/react';
+import React from 'react';
+
+export function renderWithRouter(ui) {
+    return {
+       ...render(<Router basename="/">{ui}</Router>)
+    };
+}
+
+```
 
 ## Test Structure
 
@@ -105,7 +144,7 @@ describe("Header", () => {
 
 > **NOTE:** getByRole also takes in 2 arguments - to be more specific
 
-		#### Example 1: 
+#### Example 1: 
 
 The getByRole (with a second parameter - name) applies different for different components. in Headers, for example - it looks for `aria-label` accessor attribute
 
@@ -324,4 +363,298 @@ describe("Header", () => {
 ```
 
 # Assertions
+
+The following are some of the popular assertions
+
+- `toBe("test string");` - Check if the test string matches the component
+-  `toBeInTheDocument();`- Element to be part of the document object model
+- `toHaveClass('active');` - element  to have `className` property values as `active`
+- `toBeTruthy()` - Any element which is NOT - null, undefined, 0, false
+- `toBeDefined();` - Element to be defined
+- `toBeVisible();` - Element to be visible to the user
+- `toContainHTML()` - React Element to contain child HTML element
+- `toHaveTextContent()` - React Element to contain text content
+
+```javascript
+it('"task" should be visible when the number of incomplete tasks is one', () => {
+  render(
+      <MockTodoFooter 
+        numberOfIncompleteTasks={1}
+      />
+  );
+  const pElement = screen.getByText(/1 task left/i);
+  // Expect component to be visible to the User, not hidden
+  expect(pElement).toBeVisible();
+});
+```
+
+> NOTE: the `not` operator can be chained to all of the above mentioned assertions for negative testing scenarios
+
+# Fire Events
+
+- [Fire Events - youtube link](https://www.youtube.com/watch?v=0Y11K7KSC80&list=PL4cUxeGkcC9gm4_-5UsNmLqMosM-dzuvQ&index=10)
+
+## Mocking event triggers
+
+You can create fake / dummy event triggers in 2 ways
+
+- **mapping to empty event**
+
+  ```javascript
+  <AddInput todos={[]} setTodos={() => {}}/>
+  ```
+
+- **creating a mocked event**
+
+  ```javascript
+  // mocking event
+  const mockEvent = jest.fn();
+  
+  <AddInput todos={[]} setTodos={mockEvent}/>
+  ```
+
+  Both are valid approach to mocking functions event triggers
+
+## Fire Event - Change & Click
+
+```javascript
+//mocking event trigger
+const mockedSetTodo = jest.fn();
+
+// Using fireEvent - click & change
+it('should be able to type into input', () => {
+        render(
+            <AddInput 
+                todos={[]}
+                setTodos={mockedSetTodo}
+            />
+        );
+        const inputElement = screen.getByPlaceholderText(/Add a new task here.../i);
+        // click fireEvent takes just one parameter
+        fireEvent.click(inputElement)
+        // change fireEvent takes 2 parameters
+        fireEvent.change(inputElement, { target: { value: "Go Grocery Shopping" } })
+        expect(inputElement.value).toBe("Go Grocery Shopping");
+    });
+```
+
+# Integration Tests
+
+- [Integration tests - youtube link](https://www.youtube.com/watch?v=6wbnwsKrnYU&list=PL4cUxeGkcC9gm4_-5UsNmLqMosM-dzuvQ&index=11)
+
+Integration testing is where you test how 2 or more React components interact with one another
+
+Typically your unit testing would be on the **components** folder - individual components
+
+Your integration tests would be the test script of the **view** or the **pages** folder - Views or Screens
+
+#### React Component - Todo
+
+We will be performing integration test on our **Todo** component which has 2 main React components -
+
+- <AddInpt/>
+- <TodoList/>
+
+```javascript
+// todo.js
+import React, { useState } from 'react'
+import AddInput from '../AddInput/AddInput'
+import Header from '../Header/Header'
+import TodoList from '../TodoList/TodoList'
+import "./Todo.css"
+
+function Todo() {
+
+    const [todos, setTodos] = useState([])
+
+    return (
+        <div className="todo">
+            <Header title="Todo" />
+            <AddInput 
+                setTodos={setTodos}
+                todos={todos}
+            />
+            <TodoList 
+                todos={todos}
+                setTodos={setTodos}
+            />
+        </div>
+    )
+}
+
+export default Todo
+
+```
+
+#### Integration Test
+
+```javascript
+// todo.test.js
+import { render, screen, fireEvent } from '@testing-library/react';
+import Todo from "../Todo"
+import { BrowserRouter } from "react-router-dom"
+
+const MockTodo = () => {
+    return (
+        <BrowserRouter>
+          <Todo/>
+        </BrowserRouter>
+    )
+}
+
+const addTask = (tasks) => {
+    const inputElement = screen.getByPlaceholderText(/Add a new task here.../i);
+    const buttonElement = screen.getByRole("button", { name: /Add/i} );
+    tasks.forEach((task) => {
+        fireEvent.change(inputElement, { target: { value: task } });
+        fireEvent.click(buttonElement);
+    })
+}
+
+it('should be able to type into input', () => {
+    render(
+        <MockTodo />
+    );
+    addTask(["Go Grocery Shopping"])
+    const divElement = screen.getByText(/Go Grocery Shopping/i);
+    expect(divElement).toBeInTheDocument()
+});
+
+// assert multiple query items
+it('should render multiple items', () => {
+    render(
+        <MockTodo />
+    );
+    addTask(["Go Grocery Shopping", "Go Grocery Shopping", "Go Grocery Shopping"])
+    const divElements = screen.queryAllByText(/Go Grocery Shopping/i);
+    expect(divElements.length).toBe(3)
+});
+
+// checking CSS classes
+it('task should not have complete class when initally rendered', () => {
+    render(
+        <MockTodo />
+    );
+    addTask(["Go Grocery Shopping"])
+    const divElement = screen.getByText(/Go Grocery Shopping/i);
+    expect(divElement).not.toHaveClass("todo-item-active")
+});
+
+// checking CSS classes
+it('task should have complete class when clicked', () => {
+    render(
+        <MockTodo />
+    );
+    addTask(["Go Grocery Shopping"])
+    const divElement = screen.getByText(/Go Grocery Shopping/i);
+    fireEvent.click(divElement)
+    expect(divElement).toHaveClass("todo-item-active")
+});
+```
+
+# Asynchronous Testing - findBy....()
+
+- [Dealing with Async components - youtube link](https://www.youtube.com/watch?v=TBZy-Rc-xX0&list=PL4cUxeGkcC9gm4_-5UsNmLqMosM-dzuvQ&index=13)
+
+When dealing with Components that load due to asynchronous calls to the API. we use the **findBy...()** or the **findAllBy...()** query selectors
+
+```javascript
+import {renderWithRouter} from '../../helpers/RouterHelper';
+...
+// Check single Component
+it('should render follow list items', async () => {
+        renderWithRouter(<FollowersList />);
+        const followerDivElement = await screen.findByTestId(`follower-item-0`);
+        expect(followerDivElement).toBeInTheDocument();
+});
+
+// Check multiple components
+it('should render multiple follow list items', async () => {
+        renderWithRouter(<FollowersList />);
+        // you can use regular expression to query mutiple components
+        const followerDivElements = await screen.findAllByTestId(/follower-item/i);
+        expect(followerDivElements.length).toBe(5);
+});
+
+```
+
+## Mocking API requests
+
+The following are some of the main reasons, why we should always MOCK api requests
+
+- API requests - cost money
+- API requests - are slow
+- Your test component now have external dependency
+- Not modular... SRP (for reasons above...)
+- Not reusable (for reasons above...)
+
+### :triangular_flag_on_post: Hacking React Scripts
+
+> React - by default is resetting our mocks every time.
+
+One way to resolve this (and a bit of a hack)
+
+Navigate to the following folder
+
+> 1. :beetle: node_modules:arrow_right:react-scripts:arrow_right:scripts:arrow_right:utils:arrow_right:createJestConfig
+> 2. Goto line # 69
+> 3. Overwrite the following to `false`
+
+```javascript
+resetMocks: false // Hacking 
+```
+
+### :white_check_mark: Overriding Jest Configuration in Package.json
+
+> Another **cleaner** approach is to configure your package.json
+
+```json
+ "jest": {
+    "resetMocks": false
+  }
+```
+
+> NOTE: the above configuration only works in a create-react-app project
+
+## Mocking Axios GET request
+
+to mock axios get method directly
+
+- goto your root folder and navigate to the **src** folder. 
+- Create a folder name `__mocks__`
+- Create the following filename with exact naming convention
+
+```javascript
+// __mocks__/axios.js
+const mockResponse = {
+    data: {
+        results: [
+            {
+                name: {
+                    first: "Laith",
+                    last: "Harb"
+                },
+                picture: {
+                    large: "https://randomuser.me/api/portraits/men/59.jpg"
+                },
+                login: {
+                    username: "ThePhonyGOAT"
+                }
+            }
+        ]
+    }
+}
+
+
+// eslint-disable-next-line import/no-anonymous-default-export
+export default {
+    get: jest.fn().mockResolvedValue(mockResponse)
+}
+```
+
+> NOTE: **\_\_mocks\_\_** should be part of your **src** folder
+
+
+
+
 
