@@ -452,8 +452,8 @@ Your integration tests would be the test script of the **view** or the **pages**
 
 We will be performing integration test on our **Todo** component which has 2 main React components -
 
-- <AddInpt/>
-- <TodoList/>
+- `<AddInpt/>`
+- `<TodoList/>`
 
 ```javascript
 // todo.js
